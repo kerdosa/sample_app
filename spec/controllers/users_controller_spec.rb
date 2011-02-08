@@ -65,25 +65,28 @@ describe UsersController do
       get :show, :id => @user
       response.should be_success
     end
-    
     it "should find the right user" do
       get :show, :id => @user
       assigns(:user).should == @user
     end
-    
     it "should have the right title" do
       get :show, :id => @user
       response.should have_selector("title", :content => @user.name)
     end
-    
     it "should include the user's name" do
       get :show, :id => @user
       response.should have_selector("h1", :content => @user.name)
     end
-    
     it "should have a profie image" do
       get :show, :id => @user
       response.should have_selector("h1>img", :class => "gravatar")
+    end
+    it "should show the user's microposts" do
+      mp1 = Factory(:micropost, :user => @user, :content => "Foo bar")
+      mp2 = Factory(:micropost, :user => @user, :content => "Baz quux")
+      get :show, :id => @user
+      response.should have_selector("span.content", :content => mp1.content)
+      response.should have_selector("span.content", :content => mp2.content)
     end
     
   end
@@ -178,7 +181,7 @@ describe UsersController do
       get :edit, :id => @user
       gravatar_url = "http://gravatar.com/emails"
       response.should have_selector("a", :href => gravatar_url,
-                                         :content => "change")
+                                         :content => "Change")
     end
   end # GET edit
   
@@ -275,10 +278,11 @@ describe UsersController do
     describe "DELETE 'destroy'" do
 
       before(:each) do
-        @user = Factory(:user)
+        @user = Factory(:user, :email => "nonadmin@example.com", :admin => false)
       end
 
       describe "as a non-signed-in user" do
+        # Without signin, current_user is null!
         it "should deny access" do
           delete :destroy, :id => @user
           response.should redirect_to(signin_path)
